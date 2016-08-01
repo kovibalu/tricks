@@ -1,0 +1,12 @@
+This guide explains how to setup an arbitrary docker container to work like a previously set up nvidia-docker container.
+
+1) We assume that the desired nvidia driver is installed on the host. We create the following directory structure by copying the binaries/libraries from the installation folders:
+
+nvidia/
+	bin/
+		nvidia-smi
+	lib64/
+		libcuda.so (as a symbolic link to the actual installed version, which should be copied as well)
+		libnvidia-ml.so (as a symbolic link to the actual installed version, which should be copied as well)
+		(you might need to copy the right version libcudnn.so too)
+
