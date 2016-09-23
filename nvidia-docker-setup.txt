@@ -10,3 +10,51 @@ nvidia/
 		libnvidia-ml.so (as a symbolic link to the actual installed version, which should be copied as well)
 		(you might need to copy the right version libcudnn.so too)
 
+
+----------------------------------------------
+Docker commands thanks to Fujun Luan
+----------------------------------------------
+fl356@en-cs-phoenix28:~$ docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+52bb60e19f77        ubuntu:14.04        "/bin/bash"         2 minutes ago       Up 2 minutes                            furious_northcutt
+
+# Copy host nvidia stuff to container
+DOCKER_ID=52bb60e19f77
+docker cp /usr/bin/nvidia-smi $DOCKER_ID:/nvidia/bin
+docker cp /usr/lib/x86_64-linux-gnu/libcuda.so $DOCKER_ID:/nvidia/lib64
+docker cp /usr/lib/x86_64-linux-gnu/libcuda.so.1 $DOCKER_ID:/nvidia/lib64
+docker cp /usr/lib/x86_64-linux-gnu/libcuda.so.361.42 $DOCKER_ID:/nvidia/lib64
+docker cp /usr/lib/x86_64-linux-gnu/libnvidia-ml.so $DOCKER_ID:/nvidia/lib64
+docker cp /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1 $DOCKER_ID:/nvidia/lib64
+docker cp /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.361.42 $DOCKER_ID:/nvidia/lib64
+
+# analyze symlink
+ls -al /nvidia/lib64
+
+# mount stuff in /usr/local/nvidia
+cp -r /nvidia /usr/local
+
+# run docker with device mounted 
+ls -la /dev | grep nvidia
+DOCKER_NVIDIA_DEVICES="--device /dev/nvidia0:/dev/nvidia0 --device /dev/nvidia1:/dev/nvidia1 --device /dev/nvidiactl:/dev/nvidiactl --device /dev/nvidia-uvm:/dev/nvidia-uvm"
+docker run -ti $DOCKER_NVIDIA_DEVICES --privileged nvidia_ubuntu /bin/bash
+
+# setup PATH 
+export PATH=/usr/local/nvidia/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/nvidia/lib64:$LD_LIBRARY_PATH
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------
+# Create an image with enough dependencies to support a mounted-in matlab.
+MATLAB_ROOT=/usr/local/MATLAB/R2015a
+MATLAB_LOGS=~/matlab-logs
+MATLAB_MAC_ADDRESS=00:25:90:58:39:54
+DOCKER_NVIDIA_DEVICES="--device /dev/nvidia0:/dev/nvidia0 --device /dev/nvidia1:/dev/nvidia1 --device /dev/nvidiactl:/dev/nvidiactl --device /dev/nvidia-uvm:/dev/nvidia-uvm"
+
+docker run -ti $DOCKER_NVIDIA_DEVICES -v "$MATLAB_ROOT":/usr/local/MATLAB/from-host -v "$MATLAB_LOGS":/var/log/matlab --mac-address="$MATLAB_MAC_ADDRESS"  --privileged nvidia_ubuntu /bin/bash
+# Matlab dependencies
+apt-get update && apt-get install -y libpng12-dev libfreetype6-dev  libblas-dev liblapack-dev gfortran build-essential xorg
+
+export PATH=/usr/local/MATLAB/from-host/bin:$PATH
+export PATH=/usr/local/nvidia/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/nvidia/lib64:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-7.5/lib:/usr/local/cuda-7.5/lib64:$LD_LIBRARY_PATH
